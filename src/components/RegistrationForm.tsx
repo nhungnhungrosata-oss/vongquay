@@ -11,7 +11,7 @@ import { AppSettings } from '../types';
 
 interface RegistrationFormProps {
   settings: AppSettings;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 }
 
 export default function RegistrationForm({ settings, onSuccess }: RegistrationFormProps) {
@@ -33,29 +33,25 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
     setErrorMsg(null);
     setIsSubmitting(true);
 
-    // Basic client validation
     if (!fullName.trim() || !phone.trim() || !address.trim() || !referrer.trim()) {
       setErrorMsg('Vui lòng điền đầy đủ các thông tin có dấu * để tham gia quay số.');
       setIsSubmitting(false);
       return;
     }
 
-    // Clean phone number format slightly for storage check
     const cleanPhone = phone.trim();
 
     try {
-      storage.addParticipant({
+      await storage.addParticipant({
         fullName: fullName.trim(),
         phone: cleanPhone,
         address: address.trim(),
         referrer: referrer.trim(),
-        note: note.trim()
+        note: note.trim(),
       });
 
       setIsSuccess(true);
-      onSuccess(); // Refresh parents if necessary
-      
-      // Clear form
+      await onSuccess();
       setFullName('');
       setPhone('');
       setAddress('');
@@ -65,7 +61,8 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
       if (error.message === 'DUPLICATE_PHONE') {
         setErrorMsg('Số điện thoại này đã đăng ký tham gia rồi.');
       } else {
-        setErrorMsg('Đã xảy ra lỗi hệ thống, vui lòng thử lại.');
+        console.error('Registration save error:', error);
+        setErrorMsg('Không thể lưu đăng ký. Vui lòng thử lại hoặc báo admin kiểm tra kết nối Supabase.');
       }
     } finally {
       setIsSubmitting(false);
@@ -176,98 +173,31 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
                 </motion.div>
               )}
 
-              {/* Full name */}
               <div>
-                <label className={labelClass}>
-                  <User className="w-4 h-4 text-indigo-300" />
-                  Họ và tên <span className="text-amber-300">*</span>
-                </label>
-                <input
-                  id="input-fullName"
-                  type="text"
-                  required
-                  autoComplete="name"
-                  placeholder="Ví dụ: Nguyễn Văn An"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className={inputClass}
-                />
+                <label className={labelClass}><User className="w-4 h-4 text-indigo-300" />Họ và tên <span className="text-amber-300">*</span></label>
+                <input id="input-fullName" type="text" required autoComplete="name" placeholder="Ví dụ: Nguyễn Văn An" value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputClass} />
               </div>
 
-              {/* Phone */}
               <div>
-                <label className={labelClass}>
-                  <Phone className="w-4 h-4 text-indigo-300" />
-                  Số điện thoại <span className="text-amber-300">*</span>
-                </label>
-                <input
-                  id="input-phone"
-                  type="tel"
-                  inputMode="tel"
-                  required
-                  autoComplete="tel"
-                  placeholder="Ví dụ: 0912345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={inputClass}
-                />
-                <span className="text-[11px] text-slate-500 mt-1.5 block">
-                  Mỗi số điện thoại chỉ được đăng ký một lần duy nhất.
-                </span>
+                <label className={labelClass}><Phone className="w-4 h-4 text-indigo-300" />Số điện thoại <span className="text-amber-300">*</span></label>
+                <input id="input-phone" type="tel" inputMode="tel" required autoComplete="tel" placeholder="Ví dụ: 0912345678" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
+                <span className="text-[11px] text-slate-500 mt-1.5 block">Mỗi số điện thoại chỉ được đăng ký một lần duy nhất.</span>
               </div>
 
-              {/* Address */}
               <div>
-                <label className={labelClass}>
-                  <MapPin className="w-4 h-4 text-indigo-300" />
-                  Địa chỉ nhận quà <span className="text-amber-300">*</span>
-                </label>
-                <input
-                  id="input-address"
-                  type="text"
-                  required
-                  autoComplete="street-address"
-                  placeholder="Nhập địa chỉ giao quà nếu trúng thưởng"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className={inputClass}
-                />
-                <span className="text-[11px] text-slate-500 mt-1.5 block">
-                  Vui lòng điền địa chỉ đầy đủ để admin gửi quà khi trúng giải.
-                </span>
+                <label className={labelClass}><MapPin className="w-4 h-4 text-indigo-300" />Địa chỉ nhận quà <span className="text-amber-300">*</span></label>
+                <input id="input-address" type="text" required autoComplete="street-address" placeholder="Nhập địa chỉ giao quà nếu trúng thưởng" value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} />
+                <span className="text-[11px] text-slate-500 mt-1.5 block">Vui lòng điền địa chỉ đầy đủ để admin gửi quà khi trúng giải.</span>
               </div>
 
-              {/* Referrer - label is customizable by admin */}
               <div>
-                <label className={labelClass}>
-                  <Users className="w-4 h-4 text-indigo-300" />
-                  {settings.referrerLabel || 'Ai giới thiệu bạn vào nhóm chuyên sâu?'} <span className="text-amber-300">*</span>
-                </label>
-                <input
-                  id="input-referrer"
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Facebook, Zalo, bạn bè giới thiệu..."
-                  value={referrer}
-                  onChange={(e) => setReferrer(e.target.value)}
-                  className={inputClass}
-                />
+                <label className={labelClass}><Users className="w-4 h-4 text-indigo-300" />{settings.referrerLabel || 'Ai giới thiệu bạn vào nhóm chuyên sâu?'} <span className="text-amber-300">*</span></label>
+                <input id="input-referrer" type="text" required placeholder="Ví dụ: Facebook, Zalo, bạn bè giới thiệu..." value={referrer} onChange={(e) => setReferrer(e.target.value)} className={inputClass} />
               </div>
 
-              {/* Note */}
               <div>
-                <label className={labelClass}>
-                  <FileText className="w-4 h-4 text-indigo-300" />
-                  Ghi chú <span className="text-slate-500 font-normal">(Không bắt buộc)</span>
-                </label>
-                <textarea
-                  id="input-note"
-                  rows={3}
-                  placeholder="Gửi lời nhắn tới ban tổ chức hoặc ghi chú thêm..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className={`${inputClass} resize-none min-h-[88px]`}
-                />
+                <label className={labelClass}><FileText className="w-4 h-4 text-indigo-300" />Ghi chú <span className="text-slate-500 font-normal">(Không bắt buộc)</span></label>
+                <textarea id="input-note" rows={3} placeholder="Gửi lời nhắn tới ban tổ chức hoặc ghi chú thêm..." value={note} onChange={(e) => setNote(e.target.value)} className={`${inputClass} resize-none min-h-[88px]`} />
               </div>
 
               <div className="pt-1 space-y-3">
@@ -277,14 +207,7 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
                   disabled={isSubmitting}
                   className="w-full min-h-[54px] py-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black rounded-2xl shadow-lg shadow-indigo-900/30 active:scale-[0.99] transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Gift className="w-5 h-5" />
-                      Đăng ký tham gia ngay
-                    </>
-                  )}
+                  {isSubmitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Gift className="w-5 h-5" />Đăng ký tham gia ngay</>}
                 </button>
 
                 <div className="flex items-start gap-2 text-[11px] leading-relaxed text-slate-500 justify-center px-1">
