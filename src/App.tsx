@@ -132,87 +132,91 @@ export default function App() {
     setIsAdminAuthenticated(false);
   };
 
+  const isRegistrationPage = activeTab === 'register';
+
   return (
-    <div className="min-h-screen bg-[#0F172A] font-sans text-slate-200 antialiased selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+    <div className={`min-h-screen font-sans text-slate-200 antialiased selection:bg-indigo-500 selection:text-white relative overflow-hidden ${isRegistrationPage ? 'bg-[#0B1120]' : 'bg-[#0F172A]'}`}>
       
       {/* GLOWING HEADER DECORATION */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.12)_0%,_transparent_70%)] pointer-events-none" />
 
-      {/* TOP NAVIGATION HEADBAR */}
-      <header className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          {/* Logo & Branding */}
-          <div className="flex items-center gap-3">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
-              className="w-9 h-9 bg-amber-400 rounded-lg flex items-center justify-center text-slate-900 font-bold shadow-lg"
-            >
-              <Disc className="w-5 h-5 text-slate-950" />
-            </motion.div>
-            <div>
-              <h1 className="text-lg font-bold uppercase tracking-wider text-white leading-none">
-                {settings.programName || 'VÒNG QUAY MAY MẮN'}
-              </h1>
-              <p className="text-[10px] text-slate-400 font-medium tracking-tight mt-1">
-                Giải pháp quay số Zoom / Livestream chuyên nghiệp
-              </p>
+      {/* TOP NAVIGATION HEADBAR - hidden on public registration page */}
+      {!isRegistrationPage && (
+        <header className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            {/* Logo & Branding */}
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+                className="w-9 h-9 bg-amber-400 rounded-lg flex items-center justify-center text-slate-900 font-bold shadow-lg"
+              >
+                <Disc className="w-5 h-5 text-slate-950" />
+              </motion.div>
+              <div>
+                <h1 className="text-lg font-bold uppercase tracking-wider text-white leading-none">
+                  {settings.programName || 'VÒNG QUAY MAY MẮN'}
+                </h1>
+                <p className="text-[10px] text-slate-400 font-medium tracking-tight mt-1">
+                  Giải pháp quay số Zoom / Livestream chuyên nghiệp
+                </p>
+              </div>
             </div>
+
+            {/* Navigation Controls */}
+            <nav className="flex items-center gap-1.5 bg-[#1E293B] border border-slate-700 p-1.5 rounded-xl">
+              {/* Tab 1: Register */}
+              <button
+                id="tab-register-btn"
+                onClick={() => navigateTo('register')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'register'
+                    ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>ĐĂNG KÝ THAM GIA</span>
+              </button>
+
+              {/* Tab 2: Spin Wheel */}
+              <button
+                id="tab-spin-btn"
+                onClick={() => navigateTo('spin')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'spin'
+                    ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>MÀN HÌNH QUAY SỐ</span>
+              </button>
+
+              {/* Tab 3: Admin Controls */}
+              <button
+                id="tab-admin-btn"
+                onClick={() => navigateTo('admin')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'admin'
+                    ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>QUẢN TRỊ VIÊN</span>
+                {isAdminAuthenticated && (
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+                )}
+              </button>
+            </nav>
           </div>
-
-          {/* Navigation Controls */}
-          <nav className="flex items-center gap-1.5 bg-[#1E293B] border border-slate-700 p-1.5 rounded-xl">
-            {/* Tab 1: Register */}
-            <button
-              id="tab-register-btn"
-              onClick={() => navigateTo('register')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'register'
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>ĐĂNG KÝ THAM GIA</span>
-            </button>
-
-            {/* Tab 2: Spin Wheel */}
-            <button
-              id="tab-spin-btn"
-              onClick={() => navigateTo('spin')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'spin'
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>MÀN HÌNH QUAY SỐ</span>
-            </button>
-
-            {/* Tab 3: Admin Controls */}
-            <button
-              id="tab-admin-btn"
-              onClick={() => navigateTo('admin')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'admin'
-                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>QUẢN TRỊ VIÊN</span>
-              {isAdminAuthenticated && (
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
-              )}
-            </button>
-          </nav>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* MAIN LAYOUT CANVAS */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <main className={`${isRegistrationPage ? 'max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 relative' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative'}`}>
         <AnimatePresence mode="wait">
           
           {/* TAB 1: PLAYER REGISTRATION PAGE */}
@@ -222,7 +226,7 @@ export default function App() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="py-4"
+              className="py-0"
             >
               <RegistrationForm
                 settings={settings}
@@ -532,10 +536,12 @@ export default function App() {
       </main>
 
       {/* COMPANION SMALL STATIC FOOTER */}
-      <footer className="w-full text-center py-8 text-[11px] text-gray-500 border-t border-white/5 mt-12 bg-slate-950/40">
-        <p>© 2026 {settings.programName || 'Vòng Quay May Mắn'}. All Rights Reserved.</p>
-        <p className="mt-1">Hỗ trợ đầy đủ đăng ký người chơi, quay số ngẫu nhiên, quản lý giải thưởng và xuất dữ liệu.</p>
-      </footer>
+      {!isRegistrationPage && (
+        <footer className="w-full text-center py-8 text-[11px] text-gray-500 border-t border-white/5 mt-12 bg-slate-950/40">
+          <p>© 2026 {settings.programName || 'Vòng Quay May Mắn'}. All Rights Reserved.</p>
+          <p className="mt-1">Hỗ trợ đầy đủ đăng ký người chơi, quay số ngẫu nhiên, quản lý giải thưởng và xuất dữ liệu.</p>
+        </footer>
+      )}
     </div>
   );
 }
