@@ -53,6 +53,7 @@ export default function App() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [winners, setWinners] = useState<Winner[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [settings, setSettings] = useState<AppSettings>({
     programName: 'VÒNG QUAY MAY MẮN',
     shortDescription: '',
@@ -71,26 +72,37 @@ export default function App() {
   // Active prize ID chosen on the spin screen
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>('');
 
-  // Load state from Storage on mount and keep synced
-  const reloadData = () => {
-    const loadedParticipants = storage.getParticipants();
-    const loadedWinners = storage.getWinners();
-    const loadedPrizes = storage.getPrizes();
-    const loadedSettings = storage.getSettings();
+  // Load state from Storage/Supabase and keep synced
+  const reloadData = async () => {
+    setIsLoadingData(true);
+    try {
+      const [loadedParticipants, loadedWinners, loadedPrizes, loadedSettings] = await Promise.all([
+        storage.getParticipants(),
+        storage.getWinners(),
+        storage.getPrizes(),
+        storage.getSettings(),
+      ]);
 
-    setParticipants(loadedParticipants);
-    setWinners(loadedWinners);
-    setPrizes(loadedPrizes);
-    setSettings(loadedSettings);
+      setParticipants(loadedParticipants);
+      setWinners(loadedWinners);
+      setPrizes(loadedPrizes);
+      setSettings(loadedSettings);
 
-    // Default selectedPrizeId to the first active prize if not already set or invalid
-    const activePrizes = loadedPrizes.filter(p => p.isActive);
-    if (activePrizes.length > 0) {
-      if (!selectedPrizeId || !loadedPrizes.some(p => p.id === selectedPrizeId)) {
-        setSelectedPrizeId(activePrizes[0].id);
+      const activePrizes = loadedPrizes.filter(p => p.isActive);
+      if (activePrizes.length > 0) {
+        setSelectedPrizeId((current) => {
+          if (!current || !loadedPrizes.some(p => p.id === current)) {
+            return activePrizes[0].id;
+          }
+          return current;
+        });
+      } else {
+        setSelectedPrizeId('');
       }
-    } else {
-      setSelectedPrizeId('');
+    } catch (error) {
+      console.error('Không thể tải dữ liệu:', error);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -103,7 +115,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    reloadData();
+    void reloadData();
   }, []);
 
   useEffect(() => {
@@ -166,7 +178,6 @@ export default function App() {
 
             {/* Navigation Controls */}
             <nav className="flex items-center gap-1.5 bg-[#1E293B] border border-slate-700 p-1.5 rounded-xl">
-              {/* Tab 1: Register */}
               <button
                 id="tab-register-btn"
                 onClick={() => navigateTo('register')}
@@ -180,7 +191,6 @@ export default function App() {
                 <span>ĐĂNG KÝ THAM GIA</span>
               </button>
 
-              {/* Tab 2: Spin Wheel */}
               <button
                 id="tab-spin-btn"
                 onClick={() => navigateTo('spin')}
@@ -194,7 +204,6 @@ export default function App() {
                 <span>MÀN HÌNH QUAY SỐ</span>
               </button>
 
-              {/* Tab 3: Admin Controls */}
               <button
                 id="tab-admin-btn"
                 onClick={() => navigateTo('admin')}
@@ -217,9 +226,13 @@ export default function App() {
 
       {/* MAIN LAYOUT CANVAS */}
       <main className={`${isRegistrationPage ? 'max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 relative' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative'}`}>
+        {isLoadingData && activeTab !== 'register' && (
+          <div className="mb-4 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-3 text-xs font-semibold text-indigo-200">
+            Đang đồng bộ dữ liệu...
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
-          
-          {/* TAB 1: PLAYER REGISTRATION PAGE */}
           {activeTab === 'register' && (
             <motion.div
               key="register-view"
@@ -235,7 +248,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* TAB 2: SPINNING WHEEL PAGE */}
           {activeTab === 'spin' && (
             <motion.div
               key="spin-view"
@@ -244,10 +256,7 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"
             >
-              {/* LEFT & CENTER COLUMN: THE WHEEL AND TITLE */}
               <div className="lg:col-span-2 space-y-6 flex flex-col items-center">
-                
-                {/* Visual Title Banner */}
                 <div className="text-center w-full bg-slate-900/50 backdrop-blur-md border border-slate-700 rounded-2xl p-6 shadow-lg">
                   <h2 className="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-indigo-100 to-pink-300 uppercase filter drop-shadow">
                     {settings.programName || 'VÒNG QUAY MAY MẮN'}
@@ -257,20 +266,17 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* The Canvas LuckyWheel */}
                 <LuckyWheel
                   participants={participants}
                   prizes={prizes}
+                  settings={settings}
                   selectedPrizeId={selectedPrizeId}
                   onWinnerConfirmed={reloadData}
                   onParticipantListChanged={reloadData}
                 />
               </div>
 
-              {/* RIGHT SIDEBAR: CHOOSE ACTIVE PRIZE & QUICK ACTIONS */}
               <div className="space-y-6">
-                
-                {/* Prize selector card */}
                 <div className="bg-[#1E293B] border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
                   <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500 uppercase tracking-wider flex items-center gap-1.5">
                     🎁 Chọn giải thưởng quay số
@@ -304,7 +310,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quick winners overview sidebar list */}
                 <div className="bg-[#1E293B] border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -352,7 +357,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* TAB 3: ADMIN CONTROL AND SETTINGS */}
           {activeTab === 'admin' && (
             <motion.div
               key="admin-view"
@@ -360,7 +364,6 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              {/* GATED PASSWORD ENTRY IF NOT AUTHENTICATED */}
               {!isAdminAuthenticated ? (
                 <div className="max-w-md mx-auto py-12">
                   <motion.div
@@ -419,10 +422,7 @@ export default function App() {
                   </motion.div>
                 </div>
               ) : (
-                
-                // AUTHENTICATED ADMIN PANEL DASHBOARD
                 <div className="space-y-6">
-                  {/* Admin Welcome Title and Navigation Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#1E293B] border border-slate-700 p-4 rounded-2xl shadow-md">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-indigo-600/20 text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-500/20">
@@ -440,7 +440,7 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <button
                         id="sync-data-btn"
-                        onClick={reloadData}
+                        onClick={() => void reloadData()}
                         className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-indigo-300 hover:text-white transition-all cursor-pointer border border-slate-700"
                         title="Đồng bộ tải lại dữ liệu"
                       >
@@ -458,9 +458,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Sub panel Navigation Tabs */}
                   <div className="flex items-center gap-1 border-b border-slate-700">
-                    {/* Tab 3A: Participants Table */}
                     <button
                       id="subtab-participants"
                       onClick={() => setAdminSubTab('participants')}
@@ -474,7 +472,6 @@ export default function App() {
                       <span>Danh Sách Đăng Ký ({participants.length})</span>
                     </button>
 
-                    {/* Tab 3B: Winners Table */}
                     <button
                       id="subtab-winners"
                       onClick={() => setAdminSubTab('winners')}
@@ -488,7 +485,6 @@ export default function App() {
                       <span>Danh Sách Trúng Giải ({winners.length})</span>
                     </button>
 
-                    {/* Tab 3C: Settings Program */}
                     <button
                       id="subtab-settings"
                       onClick={() => setAdminSubTab('settings')}
@@ -503,7 +499,6 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* SUB PANEL CONTENT PANELS */}
                   <div className="py-2">
                     {adminSubTab === 'participants' && (
                       <ParticipantsTable
@@ -535,7 +530,6 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* COMPANION SMALL STATIC FOOTER */}
       {!isRegistrationPage && (
         <footer className="w-full text-center py-8 text-[11px] text-gray-500 border-t border-white/5 mt-12 bg-slate-950/40">
           <p>© 2026 {settings.programName || 'Vòng Quay May Mắn'}. All Rights Reserved.</p>
