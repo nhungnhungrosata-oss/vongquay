@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Edit, Trash2, Download, Filter, X, Save, Eye, EyeOff } from 'lucide-react';
 import { Participant } from '../types';
@@ -19,6 +19,7 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
   const [phoneSearch, setPhoneSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'won'>('all');
   const [referrerFilter, setReferrerFilter] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Inline edit state
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
@@ -35,6 +36,57 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
     const matchesReferrer = referrerFilter === 'all' || p.referrer === referrerFilter;
     return matchesName && matchesPhone && matchesStatus && matchesReferrer;
   });
+
+  const filteredIds = filteredParticipants.map((p) => p.id);
+  const selectedFilteredCount = filteredIds.filter((id) => selectedIds.includes(id)).length;
+  const selectedTotalCount = selectedIds.length;
+  const isAllFilteredSelected = filteredParticipants.length > 0 && selectedFilteredCount === filteredParticipants.length;
+
+  // Remove selected ids that no longer exist after data refresh/delete
+  useEffect(() => {
+    const existingIds = new Set(participants.map((p) => p.id));
+    setSelectedIds((prev) => prev.filter((id) => existingIds.has(id)));
+  }, [participants]);
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((selectedId) => selectedId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectFiltered = () => {
+    if (filteredParticipants.length === 0) return;
+
+    if (isAllFilteredSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+      return;
+    }
+
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const handleDeleteSelected = () => {
+    const selectedParticipants = participants.filter((p) => selectedIds.includes(p.id));
+    if (selectedParticipants.length === 0) return;
+
+    const previewNames = selectedParticipants
+      .slice(0, 5)
+      .map((p) => `- ${p.fullName}`)
+      .join('\n');
+    const moreText = selectedParticipants.length > 5 ? `\n...và ${selectedParticipants.length - 5} người khác` : '';
+
+    if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedParticipants.length} người tham gia đã chọn không?\n\n${previewNames}${moreText}`)) {
+      selectedParticipants.forEach((p) => storage.deleteParticipant(p.id));
+      setSelectedIds([]);
+      onDataChanged();
+    }
+  };
 
   // Handle edit submission
   const handleSaveEdit = (e: FormEvent) => {
@@ -60,6 +112,7 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
   const handleDelete = (id: string, name: string) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa người tham gia "${name}" không?`)) {
       storage.deleteParticipant(id);
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
       onDataChanged();
     }
   };
@@ -198,6 +251,51 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
             </button>
           </div>
         </div>
+
+        {/* Quick select and bulk delete row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 border-t border-slate-800/60">
+          <div className="text-xs text-slate-400">
+            Đang hiển thị <strong className="text-white">{filteredParticipants.length}</strong> người
+            {selectedTotalCount > 0 && (
+              <span> · Đã chọn <strong className="text-amber-300">{selectedTotalCount}</strong> người</span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              id="quick-select-filtered-participants"
+              type="button"
+              disabled={filteredParticipants.length === 0}
+              onClick={handleToggleSelectFiltered}
+              className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-200 hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAllFilteredSelected ? 'Bỏ chọn danh sách đang lọc' : `Chọn nhanh ${filteredParticipants.length} người đang lọc`}
+            </button>
+
+            {selectedTotalCount > 0 && (
+              <>
+                <button
+                  id="clear-selected-participants"
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-gray-300 hover:text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Bỏ chọn tất cả
+                </button>
+
+                <button
+                  id="delete-selected-participants"
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Xóa {selectedTotalCount} người đã chọn
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Grid of Results */}
@@ -205,6 +303,18 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
         <table className="w-full text-left text-sm border-collapse">
           <thead>
             <tr className="bg-slate-950/60 border-b border-slate-800 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+              <th className="px-4 py-3.5 text-center w-12">
+                <input
+                  id="select-all-filtered-participants"
+                  type="checkbox"
+                  checked={isAllFilteredSelected}
+                  disabled={filteredParticipants.length === 0}
+                  onChange={handleToggleSelectFiltered}
+                  className="w-4 h-4 accent-indigo-500 cursor-pointer disabled:cursor-not-allowed"
+                  aria-label="Chọn nhanh toàn bộ danh sách đang lọc"
+                  title="Chọn nhanh toàn bộ danh sách đang lọc"
+                />
+              </th>
               <th className="px-4 py-3.5 text-center w-12">STT</th>
               <th className="px-4 py-3.5">Họ và tên</th>
               <th className="px-4 py-3.5">Số điện thoại</th>
@@ -218,56 +328,70 @@ export default function ParticipantsTable({ participants, onDataChanged }: Parti
           <tbody className="divide-y divide-slate-800/60 text-gray-300">
             {filteredParticipants.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500 font-medium">
+                <td colSpan={9} className="text-center py-10 text-gray-500 font-medium">
                   Không tìm thấy người tham gia phù hợp.
                 </td>
               </tr>
             ) : (
-              filteredParticipants.map((p, idx) => (
-                <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
-                  <td className="px-4 py-3 text-center text-xs font-mono text-gray-500">{idx + 1}</td>
-                  <td className="px-4 py-3 font-semibold text-white">{p.fullName}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{maskPhone(p.phone)}</td>
-                  <td className="px-4 py-3 text-xs font-medium text-indigo-200">{p.referrer}</td>
-                  <td className="px-4 py-3 text-xs max-w-[180px] truncate" title={p.address}>
-                    {p.address}
-                  </td>
-                  <td className="px-4 py-3 text-xs italic text-gray-400 max-w-[120px] truncate" title={p.note}>
-                    {p.note || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {p.status === 'won' ? (
-                      <span className="inline-flex px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                        Đã trúng ({p.prizeName})
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-0.5 bg-slate-800 border border-slate-700 text-gray-400 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                        Chưa trúng
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        id={`edit-btn-${p.id}`}
-                        onClick={() => setEditingParticipant(p)}
-                        className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-600/30 rounded transition-colors cursor-pointer"
-                        title="Sửa thông tin"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        id={`delete-btn-${p.id}`}
-                        onClick={() => handleDelete(p.id, p.fullName)}
-                        className="p-1.5 text-red-400 hover:text-white hover:bg-red-600/30 rounded transition-colors cursor-pointer"
-                        title="Xóa người tham gia"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              filteredParticipants.map((p, idx) => {
+                const isSelected = selectedIds.includes(p.id);
+
+                return (
+                  <tr key={p.id} className={`${isSelected ? 'bg-indigo-500/10' : 'hover:bg-slate-800/30'} transition-colors`}>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        id={`select-participant-${p.id}`}
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(p.id)}
+                        className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                        aria-label={`Chọn ${p.fullName}`}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center text-xs font-mono text-gray-500">{idx + 1}</td>
+                    <td className="px-4 py-3 font-semibold text-white">{p.fullName}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{maskPhone(p.phone)}</td>
+                    <td className="px-4 py-3 text-xs font-medium text-indigo-200">{p.referrer}</td>
+                    <td className="px-4 py-3 text-xs max-w-[180px] truncate" title={p.address}>
+                      {p.address}
+                    </td>
+                    <td className="px-4 py-3 text-xs italic text-gray-400 max-w-[120px] truncate" title={p.note}>
+                      {p.note || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {p.status === 'won' ? (
+                        <span className="inline-flex px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                          Đã trúng ({p.prizeName})
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-0.5 bg-slate-800 border border-slate-700 text-gray-400 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                          Chưa trúng
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          id={`edit-btn-${p.id}`}
+                          onClick={() => setEditingParticipant(p)}
+                          className="p-1.5 text-indigo-400 hover:text-white hover:bg-indigo-600/30 rounded transition-colors cursor-pointer"
+                          title="Sửa thông tin"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          id={`delete-btn-${p.id}`}
+                          onClick={() => handleDelete(p.id, p.fullName)}
+                          className="p-1.5 text-red-400 hover:text-white hover:bg-red-600/30 rounded transition-colors cursor-pointer"
+                          title="Xóa người tham gia"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
