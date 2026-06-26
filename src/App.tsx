@@ -30,9 +30,23 @@ import SettingsPanel from './components/SettingsPanel';
 type MainTab = 'register' | 'spin' | 'admin';
 type AdminSubTab = 'settings' | 'participants' | 'winners';
 
+const routeToTab = (pathname: string): MainTab => {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+
+  if (normalizedPath === '/dangky') return 'register';
+  if (normalizedPath === '/admin') return 'admin';
+  return 'spin';
+};
+
+const tabToRoute: Record<MainTab, string> = {
+  spin: '/',
+  register: '/dangky',
+  admin: '/admin',
+};
+
 export default function App() {
-  // Navigation State
-  const [activeTab, setActiveTab] = useState<MainTab>('spin'); // Default to spin view for quick presentation
+  // Navigation State - each main screen has its own URL
+  const [activeTab, setActiveTab] = useState<MainTab>(() => routeToTab(window.location.pathname));
   const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('participants');
 
   // Application Data States
@@ -80,8 +94,25 @@ export default function App() {
     }
   };
 
+  const navigateTo = (tab: MainTab) => {
+    const nextPath = tabToRoute[tab];
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+    setActiveTab(tab);
+  };
+
   useEffect(() => {
     reloadData();
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(routeToTab(window.location.pathname));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Handle Admin Passcode Login
@@ -135,7 +166,7 @@ export default function App() {
             {/* Tab 1: Register */}
             <button
               id="tab-register-btn"
-              onClick={() => setActiveTab('register')}
+              onClick={() => navigateTo('register')}
               className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'register'
                   ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
@@ -149,7 +180,7 @@ export default function App() {
             {/* Tab 2: Spin Wheel */}
             <button
               id="tab-spin-btn"
-              onClick={() => setActiveTab('spin')}
+              onClick={() => navigateTo('spin')}
               className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'spin'
                   ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
@@ -163,7 +194,7 @@ export default function App() {
             {/* Tab 3: Admin Controls */}
             <button
               id="tab-admin-btn"
-              onClick={() => setActiveTab('admin')}
+              onClick={() => navigateTo('admin')}
               className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'admin'
                   ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-sm font-bold'
@@ -304,7 +335,7 @@ export default function App() {
                     <button
                       id="view-more-winners"
                       onClick={() => {
-                        setActiveTab('admin');
+                        navigateTo('admin');
                         setAdminSubTab('winners');
                       }}
                       className="text-center w-full text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
@@ -503,9 +534,8 @@ export default function App() {
       {/* COMPANION SMALL STATIC FOOTER */}
       <footer className="w-full text-center py-8 text-[11px] text-gray-500 border-t border-white/5 mt-12 bg-slate-950/40">
         <p>© 2026 {settings.programName || 'Vòng Quay May Mắn'}. All Rights Reserved.</p>
-        <p className="mt-1">Hỗ trợ đầy đủ hiển thị đa nền tảng, xuất danh sách Excel an toàn.</p>
+        <p className="mt-1">Hỗ trợ đầy đủ đăng ký người chơi, quay số ngẫu nhiên, quản lý giải thưởng và xuất dữ liệu.</p>
       </footer>
-
     </div>
   );
 }
