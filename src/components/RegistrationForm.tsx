@@ -28,6 +28,25 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
   const inputClass = 'w-full min-h-[48px] px-4 py-3 bg-slate-950/70 text-white placeholder:text-slate-500 border border-slate-700/80 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl outline-none transition-all text-[15px] shadow-inner';
   const labelClass = 'text-[13px] font-bold text-slate-200 mb-2 flex items-center gap-2';
 
+  const getFriendlyErrorMessage = (error: any) => {
+    const rawMessage = error?.message || error?.details || 'Không rõ lỗi';
+    const code = error?.code ? `Mã lỗi: ${error.code}. ` : '';
+
+    if (String(rawMessage).includes('relation') && String(rawMessage).includes('participants')) {
+      return 'Lỗi Supabase: Chưa tạo bảng participants. Vui lòng chạy file supabase-setup.sql trong SQL Editor.';
+    }
+
+    if (String(rawMessage).toLowerCase().includes('row-level security') || String(rawMessage).toLowerCase().includes('rls')) {
+      return 'Lỗi Supabase: Chưa bật policy RLS cho bảng participants. Vui lòng chạy lại toàn bộ file supabase-setup.sql.';
+    }
+
+    if (String(rawMessage).toLowerCase().includes('invalid api key') || String(rawMessage).toLowerCase().includes('jwt')) {
+      return 'Lỗi Supabase: Key không đúng. Vui lòng kiểm tra VITE_SUPABASE_PUBLISHABLE_KEY trong Vercel rồi Redeploy.';
+    }
+
+    return `Không thể lưu đăng ký. ${code}${rawMessage}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -62,7 +81,7 @@ export default function RegistrationForm({ settings, onSuccess }: RegistrationFo
         setErrorMsg('Số điện thoại này đã đăng ký tham gia rồi.');
       } else {
         console.error('Registration save error:', error);
-        setErrorMsg('Không thể lưu đăng ký. Vui lòng thử lại hoặc báo admin kiểm tra kết nối Supabase.');
+        setErrorMsg(getFriendlyErrorMessage(error));
       }
     } finally {
       setIsSubmitting(false);
