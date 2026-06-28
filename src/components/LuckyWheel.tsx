@@ -99,8 +99,8 @@ export default function LuckyWheel({
     const size = 500;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
     ctx.scale(dpr, dpr);
 
     const cx = size / 2;
@@ -291,53 +291,53 @@ export default function LuckyWheel({
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-lg mb-4 flex items-center justify-between px-2 text-indigo-100">
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-sm font-medium">
-          <Award className="w-4.5 h-4.5 text-amber-400" />
-          <span>Giải đang quay: <strong className="text-amber-400 underline">{activePrize.name}</strong></span>
+    <div className="w-full max-w-full flex flex-col items-center overflow-hidden px-1 sm:px-0">
+      <div className="w-full max-w-lg mb-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 px-1 sm:px-2 text-indigo-100">
+        <div className="flex items-center justify-center sm:justify-start gap-2 bg-white/5 border border-white/10 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium min-w-0">
+          <Award className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-400 shrink-0" />
+          <span className="min-w-0 truncate">Giải đang quay: <strong className="text-amber-400 underline">{activePrize.name}</strong></span>
         </div>
         <button
           id="toggle-wheel-sound"
           onClick={() => setSoundEnabled(!soundEnabled)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${soundEnabled ? 'bg-emerald-500/25 border-emerald-500/35 text-emerald-300' : 'bg-white/5 border-white/10 text-gray-400'}`}
+          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer shrink-0 ${soundEnabled ? 'bg-emerald-500/25 border-emerald-500/35 text-emerald-300' : 'bg-white/5 border-white/10 text-gray-400'}`}
         >
           <Volume2 className="w-3.5 h-3.5" />
           <span>{soundEnabled ? 'Âm thanh: Bật' : 'Âm thanh: Tắt'}</span>
         </button>
       </div>
 
-      <div className="relative w-[500px] h-[500px] flex items-center justify-center my-6 filter drop-shadow-[0_20px_50px_rgba(30,27,75,0.6)]">
-        <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 z-30 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]">
-          <div className="w-8 h-10 bg-gradient-to-b from-red-500 to-amber-500 rounded-md clip-triangle" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
-          <div className="absolute top-0.5 left-1 w-6 h-7 bg-amber-300 clip-triangle" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
-          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-800 border-2 border-amber-400 rounded-full" />
+      <div className="relative w-[88vw] max-w-[500px] aspect-square flex items-center justify-center my-3 sm:my-6 mx-auto filter drop-shadow-[0_16px_36px_rgba(30,27,75,0.55)] overflow-visible">
+        <div className="absolute top-[-8px] sm:top-[-10px] left-1/2 -translate-x-1/2 z-30 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]">
+          <div className="w-7 h-9 sm:w-8 sm:h-10 bg-gradient-to-b from-red-500 to-amber-500 rounded-md clip-triangle" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
+          <div className="absolute top-0.5 left-1 w-5 h-6 sm:w-6 sm:h-7 bg-amber-300 clip-triangle" style={{ clipPath: 'polygon(50% 100%, 0 0, 100% 0)' }} />
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-slate-800 border-2 border-amber-400 rounded-full" />
         </div>
 
-        <canvas ref={canvasRef} className="rounded-full select-none" />
+        <canvas ref={canvasRef} className="w-full h-full rounded-full select-none block" />
 
-        <div className="absolute inset-0 m-auto w-28 h-28 rounded-full flex items-center justify-center z-20 pointer-events-auto">
+        <div className="absolute inset-0 m-auto w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center z-20 pointer-events-auto">
           <motion.button
             id="start-spin-button"
             disabled={isSpinning || eligibleParticipants.length === 0}
             onClick={startSpin}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`w-24 h-24 rounded-full bg-white text-slate-900 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.25)] border-4 border-amber-400 transition-all cursor-pointer select-none ${isSpinning || eligibleParticipants.length === 0 ? 'opacity-80 pointer-events-none filter saturate-50' : 'hover:scale-105 active:scale-95'}`}
+            className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white text-slate-900 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.25)] border-4 border-amber-400 transition-all cursor-pointer select-none ${isSpinning || eligibleParticipants.length === 0 ? 'opacity-80 pointer-events-none filter saturate-50' : 'hover:scale-105 active:scale-95'}`}
           >
-            <span className="text-slate-950 font-black text-xl leading-none">QUAY</span>
-            <span className="text-indigo-600 font-bold text-[10px] tracking-tighter mt-1">NGAY</span>
+            <span className="text-slate-950 font-black text-lg sm:text-xl leading-none">QUAY</span>
+            <span className="text-indigo-600 font-bold text-[9px] sm:text-[10px] tracking-tighter mt-1">NGAY</span>
           </motion.button>
         </div>
       </div>
 
-      <div className="w-full max-w-lg mt-4 flex flex-col items-center gap-2">
-        <div className="flex gap-4 text-xs font-semibold text-indigo-200">
+      <div className="w-full max-w-lg mt-3 sm:mt-4 flex flex-col items-center gap-2 px-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-semibold text-indigo-200 text-center">
           <span className="flex items-center gap-1">
             <Users className="w-3.5 h-3.5 text-indigo-400" />
             Tổng người tham gia: <strong className="text-white text-sm">{participants.length}</strong>
           </span>
-          <span className="text-white/20">|</span>
+          <span className="hidden sm:inline text-white/20">|</span>
           <span className="flex items-center gap-1">
             <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
             Đủ điều kiện quay: <strong className="text-amber-400 text-sm">{eligibleParticipants.length}</strong>
